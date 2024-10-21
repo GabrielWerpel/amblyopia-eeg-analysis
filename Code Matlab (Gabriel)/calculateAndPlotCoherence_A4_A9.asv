@@ -1,0 +1,65 @@
+function coherenceResults = calculateAndPlotCoherence_A4_A9(segmentedResults, spectraResults, window, noverlap, nfft)
+    % Initialize the coherence results structure
+    coherenceResults = struct;
+
+    % Define the keys to compare
+    key1 = 'A4';
+    key2 = 'A9';
+
+    % Extract data segments for A4 and A9 from spectraResults
+    data1 = spectraResults.(key1);
+    data2 = spectraResults.(key2);
+
+    EC1_spectrum_dB = data1.EC_spectrum_dB;
+    EC2_spectrum_dB = data2.EC_spectrum_dB;
+
+    % Extract sampling frequency from the original segmentedResults
+    hdr = segmentedResults.(key1).header;
+    Fs = hdr.Fs;
+
+    % Initialize a figure for plotting coherence
+    figure('Position', [0, 0, 1200, 600]);
+    hold on;
+    title(['Coherence between ', key1, ' and ', key2]);
+    xlabel('Frequency (Hz)');
+    ylabel('Coherence');
+    grid on;
+
+    % Calculate and plot coherence of A4 with itself
+    [Cxy_self_1, f_self_1] = mscohere(EC1_spectrum_dB, EC1_spectrum_dB, window, noverlap, nfft, Fs);
+
+    % Limit the frequency range to 0-40 Hz
+    freq_range_self_1 = f_self_1 >= 0 & f_self_1 <= 40;
+    f_limited_self_1 = f_self_1(freq_range_self_1);
+    Cxy_limited_self_1 = Cxy_self_1(freq_range_self_1);
+
+    % Store the coherence result for A4 with itself
+    coherenceResults.(key1).(key1) = struct('frequency', f_limited_self_1, 'coherence', Cxy_limited_self_1);
+
+    % Plot the coherence of A4 with itself on the second y-axis
+    yyaxis right;
+    plot(f_limited_self_1, Cxy_limited_self_1, 'k', 'LineWidth', 2, 'DisplayName', ['Coherence with ', key1, ' (self)']);
+    ylabel('Coherence (self)');
+    ylim([0 1]);
+
+    % Switch back to the first y-axis
+    yyaxis left;
+
+    % Calculate and plot coherence between A4 and A9
+    [Cxy_1_2, f_1_2] = mscohere(EC1_spectrum_dB, EC2_spectrum_dB, window, noverlap, nfft, Fs);
+
+    % Limit the frequency range to 0-40 Hz
+    freq_range_1_2 = f_1_2 >= 0 & f_1_2 <= 40;
+    f_limited_1_2 = f_1_2(freq_range_1_2);
+    Cxy_limited_1_2 = Cxy_1_2(freq_range_1_2);
+
+    % Store the coherence result between A4 and A9
+    coherenceResults.(key1).(key2) = struct('frequency', f_limited_1_2, 'coherence', Cxy_limited_1_2);
+
+    % Plot the coherence between A4 and A9
+    plot(f_limited_1_2, Cxy_limited_1_2, 'b', 'DisplayName', ['Coherence with ', key2]);
+
+    % Add legend to the plot
+    legend('show');
+    hold off;
+end
