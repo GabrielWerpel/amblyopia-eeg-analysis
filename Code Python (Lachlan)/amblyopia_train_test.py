@@ -21,13 +21,14 @@ from machine_learning_common.features.features_common import (
 )
 from sklearn.preprocessing import StandardScaler
 from machine_learning_common.evaluation.utils import does_classifier_use_features
+import os
 
 np.random.seed(42)
 
 from machine_learning_common.hyperparameters_and_classifiers.classifiers import (
     Classifiers,
 )
-
+from machine_learning_common.evaluation.utils import save_overall_performance
 
 # Create object for logging results
 results_director = ResultsDirector(
@@ -139,6 +140,7 @@ for name, model, params in classifiers_to_eval:
             n_jobs=-1,
             error_score=0.0,
         )
+
         clf.fit(x_train, y_train)
     except Exception as e:
         print(f"Error processing {name}: {e}")
@@ -185,6 +187,27 @@ results_director.build_evaluation_results(
     target_class=classes["Amblyopia"],
     scoring=scoring,
     channel_grouping=channel_grouping,
+)
+
+# Save results split by amblopia/normal and experiment condition
+test_metadata = epochs[random_permutation][test_indices].metadata.copy()
+condition_mapping = {v: k for k, v in epochs.event_id.items()}
+test_metadata["participant_experiment_id"] = (
+    test_metadata["participant_id"]
+    + "_"
+    + test_metadata["experiment_condition"].map(condition_mapping).str.replace(" ", "_")
+)
+
+save_fp = os.path.join(results_director.results_root, "other")
+os.mkdir(save_fp)
+
+save_overall_performance(
+    save_fp,
+    predictions,
+    y_test,
+    test_metadata["participant_experiment_id"].to_numpy(),
+    np.arange(8).tolist(),  # Not important
+    "participant_vs_condition_performance_metrics",
 )
 
 mcc = matthews_corrcoef(y_test, predictions)
