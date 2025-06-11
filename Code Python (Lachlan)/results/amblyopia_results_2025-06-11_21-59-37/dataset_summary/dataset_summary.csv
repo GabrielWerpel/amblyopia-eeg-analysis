@@ -1,0 +1,3 @@
+Label,Train_Participants,Train_Instances,Test_Participants,Test_Instances,Total_Participants,Total_Instances
+Normal,5,800,1,160,6,960
+Amblyopia,6,960,1,160,7,1120
