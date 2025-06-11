@@ -1,0 +1,8 @@
+,Classifier,Score (Best),Score (Mean),Score (Std),Parameters
+0,DummyClassifier,0.0,0.0,0.0,{'strategy': 'most_frequent'}
+1,LDA,0.40532838325947973,0.24073331660994132,0.022994020342432926,"{'shrinkage': None, 'solver': 'svd'}"
+2,LogisticRegression,0.5213792815977998,0.1527777616739914,0.011500758052837717,"{'C': 100, 'penalty': 'l1', 'solver': 'liblinear'}"
+3,SVM,0.5747059853638554,0.30808941055624356,0.033764168342916824,"{'C': 10, 'gamma': 0.01, 'kernel': 'rbf'}"
+4,DecisionTree,0.5529115016958249,0.5164139911781856,0.04984737859996762,"{'max_depth': None, 'min_samples_leaf': 4, 'min_samples_split': 5}"
+5,RandomForest,0.6758004247337923,0.5870469468383459,0.03680756656230599,"{'bootstrap': False, 'max_depth': 15, 'min_samples_leaf': 2, 'min_samples_split': 5, 'n_estimators': 200}"
+6,GradientBoosting,0.8509022417313039,0.6242901960100802,0.03928674996881183,"{'learning_rate': 0.5, 'max_depth': 5, 'n_estimators': 200, 'subsample': 1.0}"

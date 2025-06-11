@@ -39,6 +39,10 @@ results_director = ResultsDirector(
 epochs = load_data()
 classes = {"Normal": 0, "Amblyopia": 1}
 
+# Shuffle the epochs
+shuffled_indices = np.random.permutation(len(epochs))
+epochs = epochs[shuffled_indices]
+
 # Compute the normalized alpha feature
 normalized_alpha_features = np.zeros((len(epochs), len(epochs.ch_names)))
 normalized_alpha_feature_names = [f"{ch}_normalized_alpha" for ch in epochs.ch_names]
@@ -81,15 +85,19 @@ channel_grouping = {
 }
 
 # Permutate the data
-random_permutation = np.random.permutation(features.shape[0])
-features = features[random_permutation]
-labels = epochs.metadata["amblyopia_assesment"][random_permutation].to_numpy()
-participant_ids = epochs.metadata["participant_id"][random_permutation].to_numpy()
+labels = epochs.metadata["amblyopia_assessment"].to_numpy()
+participant_ids = epochs.metadata["participant_id"].to_numpy()
 
 test_indices = np.where((participant_ids == "c1") | (participant_ids == "a1"))[0]
 train_indices = np.where((participant_ids != "c1") & (participant_ids != "a1"))[0]
-print(f"Test participants: {epochs[test_indices].metadata['participant_id'].unique()}")
+assert set(epochs[test_indices].metadata["participant_id"].unique()) == {
+    "c1",
+    "a1",
+}, "Test participants should only include 'c1' and 'a1'"
 
+print(
+    f"Train participants: {epochs[train_indices].metadata['participant_id'].unique()}"
+)
 
 x_test, x_train = features[test_indices], features[train_indices]
 y_test, y_train = (
@@ -119,7 +127,7 @@ best_score = 0
 best_classifier = None
 best_params = None
 classifiers = {}
-scoring = "accuracy"
+scoring = "matthews_corrcoef"
 
 classifiers_to_eval = Classifiers()
 for name, model, params in classifiers_to_eval:
@@ -133,7 +141,7 @@ for name, model, params in classifiers_to_eval:
         clf = GridSearchCV(
             model,
             params,
-            cv=StratifiedKFold(5),
+            cv=StratifiedKFold(5, shuffle=True, random_state=42),
             scoring=scoring,
             return_train_score=True,
             verbose=1,
@@ -187,10 +195,11 @@ results_director.build_evaluation_results(
     target_class=classes["Amblyopia"],
     scoring=scoring,
     channel_grouping=channel_grouping,
+    montage=epochs.get_montage(),
 )
 
 # Save results split by amblopia/normal and experiment condition
-test_metadata = epochs[random_permutation][test_indices].metadata.copy()
+test_metadata = epochs[test_indices].metadata.copy()
 condition_mapping = {v: k for k, v in epochs.event_id.items()}
 test_metadata["participant_experiment_id"] = (
     test_metadata["participant_id"]
