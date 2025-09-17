@@ -22,13 +22,15 @@ COHORT_FILE = BASE_DATA_PATH / "Cohort.xlsx"
 SFREQ = 2048
 CH_NAMES = ["O1", "Oz", "O2"]
 
-BANDPASS_DATA = False
+BANDPASS_DATA = True
 BANDPASS_FREQS = (0.5, 80)
 NOTCH_FREQ = 50
 
-DISCARD_TRANSITION_PERIOD = False
+DISCARD_TRANSITION_PERIOD = True
 TRANSITION_PERIOD_SECS = 2
 EPOCH_LENGTH = 0.25
+
+# EPOCH_LENGTH = 2.0
 
 # ----------------------------- #
 #         COHORT LOGIC         #
@@ -125,7 +127,7 @@ def parse_data(cohort_map: dict) -> mne.BaseEpochs:
     event_ids = {
         "Eyes Closed": 0,
         "Eyes Opened": 1,
-        "Dominant Eye Closed ": 2,
+        "Dominant Eye Closed": 2,
         "Non Dominant Eye Closed": 3,
     }
 
@@ -148,7 +150,10 @@ def parse_data(cohort_map: dict) -> mne.BaseEpochs:
 
         alpha_ref_eyes_closed = None
 
-        for condition_idx in range(raw_data.shape[1]):
+        # condition_idxs = range(raw_data.shape[1])
+        condition_idxs = [1, 0, 2, 3]
+
+        for condition_idx in condition_idxs:
             raw = mne.io.RawArray(raw_data[:, condition_idx, :].T, info)
             raw.set_montage(custom_montage)
 
@@ -161,7 +166,7 @@ def parse_data(cohort_map: dict) -> mne.BaseEpochs:
             epochs = mne.make_fixed_length_epochs(
                 raw, duration=EPOCH_LENGTH, preload=True
             )
-            epochs.detrend = True
+            # epochs.detrend = True
 
             alpha_refs = [
                 compute_power_frequency_features(
@@ -172,7 +177,7 @@ def parse_data(cohort_map: dict) -> mne.BaseEpochs:
                 for ch_idx in range(len(mapped_ch_names))
             ]
 
-            if condition_idx == 0:
+            if condition_idx == 1:
                 alpha_ref_eyes_closed = alpha_refs
 
             alpha_ref_df = pd.DataFrame(
@@ -211,8 +216,11 @@ def preprocess_data(raw: mne.io.Raw) -> mne.io.Raw:
         mne.io.Raw: Preprocessed EEG data.
     """
     if BANDPASS_DATA:
-        raw.filter(BANDPASS_FREQS[0], BANDPASS_FREQS[1])
-        raw.notch_filter(NOTCH_FREQ)
+        raw.filter(BANDPASS_FREQS[0], BANDPASS_FREQS[1], verbose=1)
+        raw.notch_filter(NOTCH_FREQ, verbose=1)
+
+    # Re-reference to average
+    # raw.set_eeg_reference("average", projection=False, ch_type="eeg")
 
     if DISCARD_TRANSITION_PERIOD:
         raw.crop(tmin=TRANSITION_PERIOD_SECS, tmax=None)
